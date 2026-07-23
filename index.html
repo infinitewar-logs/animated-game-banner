@@ -3,12 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Secret 3D Mario Quest</title>
+    <title>Secret 3D Mario Quest - Upgraded</title>
     <style>
       body {
         margin: 0;
         overflow: hidden;
-        background-color: #0d0e15;
+        background-color: #05070f;
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
       }
       #hint-box {
@@ -16,20 +16,21 @@
         top: 20px;
         left: 20px;
         color: #00ffcc;
-        background: rgba(13, 14, 21, 0.85);
+        background: rgba(10, 14, 26, 0.9);
         border: 1px solid #00ffcc;
-        box-shadow: 0 0 10px rgba(0, 255, 204, 0.3);
-        padding: 12px 18px;
-        border-radius: 8px;
+        box-shadow: 0 0 12px rgba(0, 255, 204, 0.4);
+        padding: 14px 20px;
+        border-radius: 10px;
         pointer-events: none;
-        display: none; /* Hidden by default! Press 'V' to toggle */
+        display: none; /* Press 'V' to toggle */
         font-size: 14px;
+        z-index: 10;
       }
-      #v-prompt {
+      #controls-prompt {
         position: absolute;
         bottom: 15px;
         left: 20px;
-        color: rgba(255, 255, 255, 0.4);
+        color: rgba(255, 255, 255, 0.5);
         font-size: 12px;
         pointer-events: none;
       }
@@ -39,140 +40,170 @@
   </head>
   <body>
     <div id="hint-box">
-      🕹️ <b>Top Secret Protocol:</b><br />
+      🕹️ <b>Secret Protocol:</b><br />
       1. Press <b>SPACE</b> twice<br />
-      2. Hold <b>SHIFT</b> to launch Super Jump!<br />
+      2. Hold <b>SHIFT</b> to Super Jump!<br />
+      3. Press <b>R</b> to Reset Box & Banner!<br />
       <small
         >Space Count: <span id="space-count">0</span> | Shift:
         <span id="shift-status">OFF</span></small
       >
     </div>
 
-    <div id="v-prompt">Press [ V ] for developer hints</div>
+    <div id="controls-prompt">Press [ V ] for Hints | Press [ R ] to Reset</div>
 
     <script>
-      // 1. Scene, Camera, Renderer Setup
+      // 1. Scene & Camera Setup
       const scene = new THREE.Scene();
-      // Atmospheric Night Fog
-      scene.background = new THREE.Color(0x0a0c16);
-      scene.fog = new THREE.FogExp2(0x0a0c16, 0.035);
 
+      // Precise Camera Positioning for 33% Ground, 33% Box, 33% Banner Split
       const camera = new THREE.PerspectiveCamera(
-        60,
+        50,
         window.innerWidth / window.innerHeight,
         0.1,
         1000,
       );
-      camera.position.set(0, 3.5, 9);
-      camera.lookAt(0, 1.8, 0);
+      camera.position.set(0, 2.8, 8.5);
+      camera.lookAt(0, 2.8, 0);
 
       const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setPixelRatio(window.devicePixelRatio);
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       document.body.appendChild(renderer.domElement);
 
-      // 2. Neon & Dynamic Lighting
-      const ambientLight = new THREE.AmbientLight(0x3a2d54, 1.2); // Purple ambient ambient light
+      // 2. Background Mesh (Glow Moon / Ambient Mesh)
+      const bgGeo = new THREE.PlaneGeometry(30, 20);
+      const bgCanvas = document.createElement("canvas");
+      bgCanvas.width = 512;
+      bgCanvas.height = 512;
+      const bgCtx = bgCanvas.getContext("2d");
+      const bgGlow = bgCtx.createRadialGradient(256, 256, 10, 256, 256, 250);
+      bgGlow.addColorStop(0, "#1a1f3d");
+      bgGlow.addColorStop(0.5, "#0b0e1e");
+      bgGlow.addColorStop(1, "#030408");
+      bgCtx.fillStyle = bgGlow;
+      bgCtx.fillRect(0, 0, 512, 512);
+
+      const bgTexture = new THREE.CanvasTexture(bgCanvas);
+      const bgMat = new THREE.MeshBasicMaterial({ map: bgTexture });
+      const backgroundMesh = new THREE.Mesh(bgGeo, bgMat);
+      backgroundMesh.position.set(0, 5, -8);
+      scene.add(backgroundMesh);
+
+      // 3. Lighting
+      const ambientLight = new THREE.AmbientLight(0x4a3b69, 1.2);
       scene.add(ambientLight);
 
-      // Main Spotlight over the block
-      const spotLight = new THREE.SpotLight(0xffaa00, 2);
-      spotLight.position.set(0, 10, 2);
-      spotLight.castShadow = true;
-      spotLight.angle = Math.PI / 4;
-      scene.add(spotLight);
+      const mainLight = new THREE.PointLight(0xffaa00, 2, 15);
+      mainLight.position.set(0, 5, 3);
+      scene.add(mainLight);
 
-      // Subtle Blue Fill Light from below
-      const rimLight = new THREE.DirectionalLight(0x00d2ff, 0.8);
-      rimLight.position.set(-5, 2, -5);
-      scene.add(rimLight);
+      const blueRim = new THREE.DirectionalLight(0x00d2ff, 0.9);
+      blueRim.position.set(-4, 6, 2);
+      scene.add(blueRim);
 
-      // 3. Cyber Grass Floor
-      const floorGeo = new THREE.PlaneGeometry(30, 30);
+      // 4. Ombre / Gradient Floor Mesh
+      const floorGeo = new THREE.PlaneGeometry(16, 16);
+      const floorCanvas = document.createElement("canvas");
+      floorCanvas.width = 512;
+      floorCanvas.height = 512;
+      const fCtx = floorCanvas.getContext("2d");
+
+      // Circular Ombre Gradient
+      const floorGrad = fCtx.createRadialGradient(256, 256, 0, 256, 256, 256);
+      floorGrad.addColorStop(0, "#00ffcc"); // Glowing center
+      floorGrad.addColorStop(0.3, "#0d3b66"); // Mid blue transition
+      floorGrad.addColorStop(0.8, "#0d1117"); // Dark edge
+      floorGrad.addColorStop(1, "#05070f"); // Deep background blend
+      fCtx.fillStyle = floorGrad;
+      fCtx.fillRect(0, 0, 512, 512);
+
+      const floorTexture = new THREE.CanvasTexture(floorCanvas);
       const floorMat = new THREE.MeshStandardMaterial({
-        color: 0x112233,
-        roughness: 0.6,
-        metalness: 0.2,
+        map: floorTexture,
+        roughness: 0.4,
+        metalness: 0.1,
       });
       const floor = new THREE.Mesh(floorGeo, floorMat);
       floor.rotation.x = -Math.PI / 2;
-      floor.receiveShadow = true;
+      floor.position.y = 0;
       scene.add(floor);
 
-      // Grid overlay on floor for cool look
-      const grid = new THREE.GridHelper(30, 30, 0x00ffcc, 0x1e293b);
-      grid.position.y = 0.01;
-      scene.add(grid);
+      // 5. Minecraft Question Block (Middle 33% Zone ~ Y: 2.8)
+      const cubeGeo = new THREE.BoxGeometry(1.1, 1.1, 1.1);
+      const activeBlockColor = 0xffaa00;
+      const usedBlockColor = 0x444455;
 
-      // 4. Glowing Minecraft Question Block
-      const cubeGeo = new THREE.BoxGeometry(1.2, 1.2, 1.2);
       const cubeMat = new THREE.MeshStandardMaterial({
-        color: 0xffaa00,
+        color: activeBlockColor,
         roughness: 0.2,
-        metalness: 0.5,
-        emissive: 0x332200,
+        metalness: 0.4,
+        emissive: 0x442200,
       });
       const questionBlock = new THREE.Mesh(cubeGeo, cubeMat);
-      questionBlock.position.set(0, 4, 0);
-      questionBlock.castShadow = true;
+      questionBlock.position.set(0, 2.8, 0); // Middle Third
       scene.add(questionBlock);
 
-      // 5. Stylized Mario Baby Character
+      // 6. Mario Baby Character (Bottom 33% Zone ~ Y: 0 - 1)
       const marioGroup = new THREE.Group();
 
-      // Body (Capsule / Rounded Red Shape)
-      const bodyGeo = new THREE.SphereGeometry(0.5, 32, 16);
-      bodyGeo.scale(1, 1.2, 1);
+      const bodyGeo = new THREE.SphereGeometry(0.45, 32, 16);
+      bodyGeo.scale(1, 1.15, 1);
       const bodyMat = new THREE.MeshStandardMaterial({
-        color: 0xff3355,
+        color: 0xff2244,
         roughness: 0.3,
       });
       const marioBody = new THREE.Mesh(bodyGeo, bodyMat);
-      marioBody.position.y = 0.6;
-      marioBody.castShadow = true;
+      marioBody.position.y = 0.5;
       marioGroup.add(marioBody);
 
-      // Glowing Cap
-      const hatGeo = new THREE.CylinderGeometry(0.35, 0.55, 0.25, 32);
-      const hatMat = new THREE.MeshStandardMaterial({ color: 0xcc0033 });
+      const hatGeo = new THREE.CylinderGeometry(0.3, 0.5, 0.22, 32);
+      const hatMat = new THREE.MeshStandardMaterial({ color: 0xbb0022 });
       const marioHat = new THREE.Mesh(hatGeo, hatMat);
-      marioHat.position.set(0, 1.15, 0.05);
+      marioHat.position.set(0, 1.0, 0.05);
       marioHat.rotation.x = 0.1;
       marioGroup.add(marioHat);
 
       scene.add(marioGroup);
 
-      // 6. Dynamic 3D Floating Banner Mesh (Created via 2D Canvas)
-      function create3DTextBanner(text) {
+      // 7. Ultra High-Resolution 3D Floating Banner (Top 33% Zone ~ Y: 4.8)
+      function createHighResBanner(text) {
         const canvas = document.createElement("canvas");
-        canvas.width = 512;
-        canvas.height = 256;
+        canvas.width = 1024; // Ultra High-Res
+        canvas.height = 512;
         const ctx = canvas.getContext("2d");
 
-        // Canvas Background
-        ctx.fillStyle = "#111827";
+        // Banner Glass-Dark Background
+        ctx.fillStyle = "#0d1322";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.lineWidth = 10;
-        ctx.strokeStyle = "#00ffcc";
-        ctx.strokeRect(5, 5, canvas.width - 10, canvas.height - 10);
 
-        // Banner Text
+        // Double Neon Border
+        ctx.lineWidth = 14;
+        ctx.strokeStyle = "#00ffcc";
+        ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = "#ffaa00";
+        ctx.strokeRect(25, 25, canvas.width - 50, canvas.height - 50);
+
+        // High-Res Typography
         ctx.fillStyle = "#ffffff";
-        ctx.font = "Bold 28px Arial";
+        ctx.font = "900 52px Arial, sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText("⚡ SECRET UNLOCKED ⚡", canvas.width / 2, 70);
+        ctx.fillText("⚡ SECRET UNLOCKED ⚡", canvas.width / 2, 130);
 
         ctx.fillStyle = "#00ffcc";
-        ctx.font = "22px Arial";
-        ctx.fillText(text, canvas.width / 2, 140);
+        ctx.font = "Bold 42px Arial, sans-serif";
+        ctx.fillText(text, canvas.width / 2, 260);
 
         ctx.fillStyle = "#ffaa00";
-        ctx.font = "16px Arial";
-        ctx.fillText("🤫 Only You & Me Know This!", canvas.width / 2, 195);
+        ctx.font = "32px Arial, sans-serif";
+        ctx.fillText("🤫 Only You & Me Know This!", canvas.width / 2, 370);
 
         const texture = new THREE.CanvasTexture(canvas);
-        const bannerGeo = new THREE.PlaneGeometry(3.5, 1.75);
+        const bannerGeo = new THREE.PlaneGeometry(3.6, 1.8);
         const bannerMat = new THREE.MeshBasicMaterial({
           map: texture,
           side: THREE.DoubleSide,
@@ -181,14 +212,14 @@
         });
 
         const mesh = new THREE.Mesh(bannerGeo, bannerMat);
-        mesh.position.set(0, 4, 0); // Spawns inside block
+        mesh.position.set(0, 2.8, 0); // Start inside the box
         return mesh;
       }
 
-      const secretBanner = create3DTextBanner("MISSION ACCOMPLISHED");
+      let secretBanner = createHighResBanner("MISSION ACCOMPLISHED");
       scene.add(secretBanner);
 
-      // 7. Logic & Control Variables
+      // 8. Game Logic & Controls
       let spacePresses = 0;
       let isShiftPressed = false;
       let isJumping = false;
@@ -200,14 +231,38 @@
       const spaceCountUI = document.getElementById("space-count");
       const shiftStatusUI = document.getElementById("shift-status");
 
-      // Keyboard Controls
+      // Reset Functionality
+      function resetScene() {
+        isBannerRevealed = false;
+        isJumping = false;
+        spacePresses = 0;
+        spaceCountUI.innerText = 0;
+
+        // Reset Box
+        questionBlock.position.set(0, 2.8, 0);
+        questionBlock.material.color.setHex(activeBlockColor);
+        questionBlock.material.emissive.setHex(0x442200);
+
+        // Reset Banner
+        secretBanner.position.set(0, 2.8, 0);
+        secretBanner.material.opacity = 0;
+
+        // Reset Mario
+        marioGroup.position.set(0, 0, 0);
+      }
+
       window.addEventListener("keydown", (e) => {
-        // Hint Toggle via 'V' Key
+        // 'V' for Hint Toggle
         if (e.key === "v" || e.key === "V") {
           hintBox.style.display =
             hintBox.style.display === "none" || hintBox.style.display === ""
               ? "block"
               : "none";
+        }
+
+        // 'R' for Reset
+        if (e.key === "r" || e.key === "R") {
+          resetScene();
         }
 
         if (e.code === "Space") {
@@ -220,7 +275,7 @@
           shiftStatusUI.innerText = "ON";
         }
 
-        // Secret Trigger Condition Check
+        // Trigger Super Jump Condition
         if (spacePresses >= 2 && isShiftPressed && !isJumping) {
           isJumping = true;
           jumpProgress = 0;
@@ -236,31 +291,30 @@
         }
       });
 
-      // 8. Animation & Render Loop
+      // 9. Animation Loop
       function animate() {
         requestAnimationFrame(animate);
 
-        // Character Patrol Loop (When not jumping)
+        // Mario Patrol Motion
         if (!isJumping) {
           angle += 0.025;
-          marioGroup.position.x = Math.cos(angle) * 2.2;
-          marioGroup.position.z = Math.sin(angle) * 2.2;
+          marioGroup.position.x = Math.cos(angle) * 1.8;
+          marioGroup.position.z = Math.sin(angle) * 1.8;
           marioGroup.rotation.y = -angle + Math.PI / 2;
         } else {
-          // High Jump Physics Sequence
-          jumpProgress += 0.035;
+          // High Jump towards Block
+          jumpProgress += 0.04;
 
-          // Move towards block center
-          marioGroup.position.x += (0 - marioGroup.position.x) * 0.12;
-          marioGroup.position.z += (0 - marioGroup.position.z) * 0.12;
+          marioGroup.position.x += (0 - marioGroup.position.x) * 0.15;
+          marioGroup.position.z += (0 - marioGroup.position.z) * 0.15;
 
-          const jumpHeight = Math.sin(jumpProgress * Math.PI) * 3.8;
+          const jumpHeight = Math.sin(jumpProgress * Math.PI) * 2.6;
           marioGroup.position.y = jumpHeight;
 
-          // Block Hit Check
-          if (jumpProgress >= 0.48 && marioGroup.position.y >= 3.0) {
-            questionBlock.position.y = 4.3; // Punch block up
-            questionBlock.material.color.setHex(0x555566); // Turn activated gray
+          // Hit Detection with Box
+          if (jumpProgress >= 0.48 && marioGroup.position.y >= 2.0) {
+            questionBlock.position.y = 3.1; // Punch Box Up
+            questionBlock.material.color.setHex(usedBlockColor);
             questionBlock.material.emissive.setHex(0x000000);
             isBannerRevealed = true;
           }
@@ -268,26 +322,24 @@
           if (jumpProgress >= 1) {
             isJumping = false;
             marioGroup.position.y = 0;
-            questionBlock.position.y = 4.0; // Reset block position
+            questionBlock.position.y = 2.8; // Return Box to middle third
           }
         }
 
-        // 3D Banner Ejection & Floating Animation
+        // Banner Ejection to Top 33% Zone (Y: 4.8)
         if (isBannerRevealed) {
-          // Float Upwards smoothly
-          if (secretBanner.position.y < 6.2) {
-            secretBanner.position.y += 0.04;
+          if (secretBanner.position.y < 4.8) {
+            secretBanner.position.y += 0.05;
           }
-          // Fade in Banner opacity
           if (secretBanner.material.opacity < 1) {
-            secretBanner.material.opacity += 0.05;
+            secretBanner.material.opacity += 0.08;
           }
-          // Floating Sine-wave oscillation
-          secretBanner.position.y += Math.sin(Date.now() * 0.003) * 0.003;
-          secretBanner.rotation.y = Math.sin(Date.now() * 0.001) * 0.1;
+          // Gentle Floating Wave
+          secretBanner.position.y += Math.sin(Date.now() * 0.003) * 0.002;
+          secretBanner.rotation.y = Math.sin(Date.now() * 0.001) * 0.05;
         }
 
-        // Rotate block slowly
+        // Slow Box Rotation
         questionBlock.rotation.y += 0.01;
 
         renderer.render(scene, camera);
