@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>3D Quest - Robot Fixed Rotation</title>
+    <title>3D Quest - Question Block & Mario</title>
     <style>
       body {
         margin: 0;
@@ -35,9 +35,8 @@
         pointer-events: none;
       }
     </style>
-    <!-- Three.js Library -->
+    <!-- Three.js & GLTFLoader CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- GLTF Model Loader -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
   </head>
   <body>
@@ -57,7 +56,6 @@
     <script>
       // 1. Scene & Camera Setup
       const scene = new THREE.Scene();
-      const clock = new THREE.Clock();
 
       const camera = new THREE.PerspectiveCamera(
         50,
@@ -65,8 +63,8 @@
         0.1,
         1000,
       );
-      camera.position.set(0, 2.8, 8.5);
-      camera.lookAt(0, 2.8, 0);
+      camera.position.set(0, 2.5, 7.5);
+      camera.lookAt(0, 2.5, 0);
 
       const renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setPixelRatio(window.devicePixelRatio);
@@ -75,7 +73,7 @@
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       document.body.appendChild(renderer.domElement);
 
-      // 2. Ambient Dark Glow Background
+      // 2. Ambient Backdrop
       const bgGeo = new THREE.PlaneGeometry(30, 20);
       const bgCanvas = document.createElement("canvas");
       bgCanvas.width = 512;
@@ -97,18 +95,18 @@
       scene.add(backgroundMesh);
 
       // 3. Lighting Setup
-      const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
       scene.add(ambientLight);
 
       const mainLight = new THREE.PointLight(0xffaa00, 2, 15);
       mainLight.position.set(0, 5, 3);
       scene.add(mainLight);
 
-      const blueRim = new THREE.DirectionalLight(0x00d2ff, 0.9);
+      const blueRim = new THREE.DirectionalLight(0x00d2ff, 0.8);
       blueRim.position.set(-4, 6, 2);
       scene.add(blueRim);
 
-      // 4. Ombre Base Floor
+      // 4. Floor (Ombre Base)
       const floorGeo = new THREE.PlaneGeometry(16, 16);
       const floorCanvas = document.createElement("canvas");
       floorCanvas.width = 512;
@@ -127,62 +125,128 @@
       const floorMat = new THREE.MeshStandardMaterial({
         map: floorTexture,
         roughness: 0.4,
-        metalness: 0.1,
       });
       const floor = new THREE.Mesh(floorGeo, floorMat);
       floor.rotation.x = -Math.PI / 2;
       floor.position.y = 0;
       scene.add(floor);
 
-      // 5. Question Block
-      const cubeGeo = new THREE.BoxGeometry(1.1, 1.1, 1.1);
-      const activeBlockColor = 0xffaa00;
-      const usedBlockColor = 0x444455;
+      // 5. Dynamic Question Mark Texture Generator 🎨
+      function createQuestionBlockTexture(isUsed = false) {
+        const canvas = document.createElement("canvas");
+        canvas.width = 512;
+        canvas.height = 512;
+        const ctx = canvas.getContext("2d");
 
-      const cubeMat = new THREE.MeshStandardMaterial({
-        color: activeBlockColor,
-        roughness: 0.2,
-        metalness: 0.4,
-        emissive: 0x442200,
+        // Background Fill
+        ctx.fillStyle = isUsed ? "#444455" : "#ffaa00";
+        ctx.fillRect(0, 0, 512, 512);
+
+        // Outer Border
+        ctx.lineWidth = 24;
+        ctx.strokeStyle = isUsed ? "#222233" : "#b36b00";
+        ctx.strokeRect(12, 12, 488, 488);
+
+        // Inner Corner Screws/Rivets
+        ctx.fillStyle = isUsed ? "#222233" : "#7a4900";
+        const dotPositions = [
+          [40, 40],
+          [472, 40],
+          [40, 472],
+          [472, 472],
+        ];
+        dotPositions.forEach(([x, y]) => {
+          ctx.beginPath();
+          ctx.arc(x, y, 12, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        // Draw '?' Symbol
+        if (!isUsed) {
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "900 320px Arial, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          // Subtle text shadow for 3D depth inside the block
+          ctx.shadowColor = "rgba(0,0,0,0.3)";
+          ctx.shadowOffsetX = 6;
+          ctx.shadowOffsetY = 6;
+          ctx.fillText("?", 256, 256);
+        } else {
+          // Empty block detail when used
+          ctx.fillStyle = "#222233";
+          ctx.fillRect(180, 230, 152, 50);
+        }
+
+        return new THREE.CanvasTexture(canvas);
+      }
+
+      // Question Block Creation (Applied Texture to All 6 Faces)
+      const activeTexture = createQuestionBlockTexture(false);
+      const usedTexture = createQuestionBlockTexture(true);
+
+      const cubeGeo = new THREE.BoxGeometry(1.2, 1.2, 1.2);
+      const activeMaterial = new THREE.MeshStandardMaterial({
+        map: activeTexture,
+        roughness: 0.3,
+        metalness: 0.1,
       });
-      const questionBlock = new THREE.Mesh(cubeGeo, cubeMat);
+      const usedMaterial = new THREE.MeshStandardMaterial({
+        map: usedTexture,
+        roughness: 0.5,
+        metalness: 0.1,
+      });
+
+      const questionBlock = new THREE.Mesh(cubeGeo, activeMaterial);
       questionBlock.position.set(0, 2.8, 0);
       scene.add(questionBlock);
 
-      // 6. ROBOT MODEL LOADING (GLTF)
+      // 6. Mario / Character Group (Static Positioned Directly Under Block)
       const characterGroup = new THREE.Group();
+      characterGroup.position.set(0, 0, 0);
       scene.add(characterGroup);
-      let mixer = null;
 
+      // Load Mario GLB (Fallback to Mesh if file missing)
       const loader = new THREE.GLTFLoader();
+      loader.load(
+        "./mario.glb",
+        (gltf) => {
+          const mario = gltf.scene;
 
-      const modelUrl =
-        "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/models/gltf/RobotExpressive/RobotExpressive.glb";
+          const box = new THREE.Box3().setFromObject(mario);
+          const size = box.getSize(new THREE.Vector3());
+          const scale = 1.2 / size.y;
+          mario.scale.set(scale, scale, scale);
 
-      loader.load(modelUrl, (gltf) => {
-        const robot = gltf.scene;
-        robot.scale.set(0.35, 0.35, 0.35);
-        robot.position.set(0, 0, 0);
+          mario.position.set(0, 0, 0);
+          characterGroup.add(mario);
+        },
+        undefined,
+        (error) => {
+          console.log("GLB file fallback applied");
 
-        // 🔄 ROTATION FIX: Model face flipped by 180 degrees (Math.PI)
-        robot.rotation.y = Math.PI;
+          const bodyGeo = new THREE.BoxGeometry(0.6, 0.8, 0.5);
+          const bodyMat = new THREE.MeshStandardMaterial({
+            color: 0xd63031,
+            roughness: 0.3,
+          });
+          const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+          bodyMesh.position.y = 0.4;
 
-        characterGroup.add(robot);
+          const headGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+          const headMat = new THREE.MeshStandardMaterial({
+            color: 0xffeaa7,
+            roughness: 0.2,
+          });
+          const headMesh = new THREE.Mesh(headGeo, headMat);
+          headMesh.position.y = 1.0;
 
-        // Setup Animation
-        if (gltf.animations && gltf.animations.length > 0) {
-          mixer = new THREE.AnimationMixer(robot);
-          const runClip =
-            THREE.AnimationClip.findByName(gltf.animations, "Running") ||
-            gltf.animations[0];
-          if (runClip) {
-            const action = mixer.clipAction(runClip);
-            action.play();
-          }
-        }
-      });
+          characterGroup.add(bodyMesh);
+          characterGroup.add(headMesh);
+        },
+      );
 
-      // 7. High-Res Secret Banner
+      // 7. Secret Banner (Top Zone ~ Y: 4.8)
       function createHighResBanner(text) {
         const canvas = document.createElement("canvas");
         canvas.width = 1024;
@@ -230,12 +294,11 @@
       let secretBanner = createHighResBanner("MISSION ACCOMPLISHED");
       scene.add(secretBanner);
 
-      // 8. Game Mechanics & Controls
+      // 8. Game Controls & Jump Mechanics
       let spacePresses = 0;
       let isShiftPressed = false;
       let isJumping = false;
       let jumpProgress = 0;
-      let angle = 0;
       let isBannerRevealed = false;
 
       const hintBox = document.getElementById("hint-box");
@@ -249,8 +312,7 @@
         spaceCountUI.innerText = 0;
 
         questionBlock.position.set(0, 2.8, 0);
-        questionBlock.material.color.setHex(activeBlockColor);
-        questionBlock.material.emissive.setHex(0x442200);
+        questionBlock.material = activeMaterial;
 
         secretBanner.position.set(0, 2.8, 0);
         secretBanner.material.opacity = 0;
@@ -292,37 +354,23 @@
         }
       });
 
-      // 9. Main Render Loop
+      // 9. Render Loop
       function animate() {
         requestAnimationFrame(animate);
 
-        const delta = clock.getDelta();
+        // Cube Rotation
+        questionBlock.rotation.y += 0.015;
 
-        if (mixer) {
-          mixer.update(delta);
-        }
-
-        // Patrol Orbit - Face forward along tangential vector
-        if (!isJumping) {
-          angle += 0.025;
-          characterGroup.position.x = Math.cos(angle) * 1.8;
-          characterGroup.position.z = Math.sin(angle) * 1.8;
-
-          // 🔄 Correct Face Facing Angle
-          characterGroup.rotation.y = -angle - Math.PI / 2;
-        } else {
+        // Straight Vertical Jump Physics
+        if (isJumping) {
           jumpProgress += 0.04;
-
-          characterGroup.position.x += (0 - characterGroup.position.x) * 0.15;
-          characterGroup.position.z += (0 - characterGroup.position.z) * 0.15;
-
-          const jumpHeight = Math.sin(jumpProgress * Math.PI) * 2.6;
+          const jumpHeight = Math.sin(jumpProgress * Math.PI) * 2.2;
           characterGroup.position.y = jumpHeight;
 
-          if (jumpProgress >= 0.48 && characterGroup.position.y >= 2.0) {
+          // Collision with Box
+          if (jumpProgress >= 0.48 && characterGroup.position.y >= 1.8) {
             questionBlock.position.y = 3.1;
-            questionBlock.material.color.setHex(usedBlockColor);
-            questionBlock.material.emissive.setHex(0x000000);
+            questionBlock.material = usedMaterial; // Switch texture to used state
             isBannerRevealed = true;
           }
 
@@ -333,6 +381,7 @@
           }
         }
 
+        // Secret Banner Floating Animation
         if (isBannerRevealed) {
           if (secretBanner.position.y < 4.8) {
             secretBanner.position.y += 0.05;
@@ -344,13 +393,12 @@
           secretBanner.rotation.y = Math.sin(Date.now() * 0.001) * 0.05;
         }
 
-        questionBlock.rotation.y += 0.01;
-
         renderer.render(scene, camera);
       }
 
       animate();
 
+      // Window Resizing
       window.addEventListener("resize", () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
