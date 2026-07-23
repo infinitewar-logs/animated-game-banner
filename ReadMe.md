@@ -16,3 +16,10 @@ Contains base foundation for the roaming object and static object
 Contains the banner details
 Contains hidden hint logic
 Excellenct cyber punk type edit by Gemini !!!
+
+## branch details withAnimatorModel
+
+    1.	Zero Loading Issue / Direct Run: File local open karsho ke host karsho, ek sec ma direct chalsho without lag.
+    2.	Vision Box / Center Auto-Alignment: Model direct standard bounds mate optimized chhe.
+    3.	Exact 33-33-33 Camera Layout: Ground, Middle Box, and High-Res Secret Banner cleanly structured.
+    4.	All Secret Controls: V for hints, 2x SPACE + SHIFT for Super Jump, ane R for instant Reset!

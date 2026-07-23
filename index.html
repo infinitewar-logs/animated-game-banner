@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Secret 3D Mario Quest - Upgraded</title>
+    <title>3D Quest - Direct Simple Model Edition</title>
     <style>
       body {
         margin: 0;
@@ -53,10 +53,9 @@
     <div id="controls-prompt">Press [ V ] for Hints | Press [ R ] to Reset</div>
 
     <script>
-      // 1. Scene & Camera Setup
+      // 1. Scene & Camera Setup (33% Ground, 33% Box, 33% Banner)
       const scene = new THREE.Scene();
 
-      // Precise Camera Positioning for 33% Ground, 33% Box, 33% Banner Split
       const camera = new THREE.PerspectiveCamera(
         50,
         window.innerWidth / window.innerHeight,
@@ -73,7 +72,7 @@
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       document.body.appendChild(renderer.domElement);
 
-      // 2. Background Mesh (Glow Moon / Ambient Mesh)
+      // 2. Glowing Ambient Backdrop Mesh
       const bgGeo = new THREE.PlaneGeometry(30, 20);
       const bgCanvas = document.createElement("canvas");
       bgCanvas.width = 512;
@@ -87,12 +86,14 @@
       bgCtx.fillRect(0, 0, 512, 512);
 
       const bgTexture = new THREE.CanvasTexture(bgCanvas);
-      const bgMat = new THREE.MeshBasicMaterial({ map: bgTexture });
-      const backgroundMesh = new THREE.Mesh(bgGeo, bgMat);
+      const backgroundMesh = new THREE.Mesh(
+        bgGeo,
+        new THREE.MeshBasicMaterial({ map: bgTexture }),
+      );
       backgroundMesh.position.set(0, 5, -8);
       scene.add(backgroundMesh);
 
-      // 3. Lighting
+      // 3. Lighting Setup
       const ambientLight = new THREE.AmbientLight(0x4a3b69, 1.2);
       scene.add(ambientLight);
 
@@ -104,19 +105,18 @@
       blueRim.position.set(-4, 6, 2);
       scene.add(blueRim);
 
-      // 4. Ombre / Gradient Floor Mesh
+      // 4. Ombre / Radial Base Mesh (Floor)
       const floorGeo = new THREE.PlaneGeometry(16, 16);
       const floorCanvas = document.createElement("canvas");
       floorCanvas.width = 512;
       floorCanvas.height = 512;
       const fCtx = floorCanvas.getContext("2d");
 
-      // Circular Ombre Gradient
       const floorGrad = fCtx.createRadialGradient(256, 256, 0, 256, 256, 256);
-      floorGrad.addColorStop(0, "#00ffcc"); // Glowing center
-      floorGrad.addColorStop(0.3, "#0d3b66"); // Mid blue transition
-      floorGrad.addColorStop(0.8, "#0d1117"); // Dark edge
-      floorGrad.addColorStop(1, "#05070f"); // Deep background blend
+      floorGrad.addColorStop(0, "#00ffcc");
+      floorGrad.addColorStop(0.3, "#0d3b66");
+      floorGrad.addColorStop(0.8, "#0d1117");
+      floorGrad.addColorStop(1, "#05070f");
       fCtx.fillStyle = floorGrad;
       fCtx.fillRect(0, 0, 512, 512);
 
@@ -131,7 +131,7 @@
       floor.position.y = 0;
       scene.add(floor);
 
-      // 5. Minecraft Question Block (Middle 33% Zone ~ Y: 2.8)
+      // 5. Question Block (Middle 33% Zone ~ Y: 2.8)
       const cubeGeo = new THREE.BoxGeometry(1.1, 1.1, 1.1);
       const activeBlockColor = 0xffaa00;
       const usedBlockColor = 0x444455;
@@ -143,43 +143,51 @@
         emissive: 0x442200,
       });
       const questionBlock = new THREE.Mesh(cubeGeo, cubeMat);
-      questionBlock.position.set(0, 2.8, 0); // Middle Third
+      questionBlock.position.set(0, 2.8, 0);
       scene.add(questionBlock);
 
-      // 6. Mario Baby Character (Bottom 33% Zone ~ Y: 0 - 1)
-      const marioGroup = new THREE.Group();
+      // 6. Direct Simple Character (Procedural Mesh - Zero File Dependencies)
+      const characterGroup = new THREE.Group();
 
-      const bodyGeo = new THREE.SphereGeometry(0.45, 32, 16);
-      bodyGeo.scale(1, 1.15, 1);
+      // Body Box (Vision Mesh)
+      const bodyGeo = new THREE.BoxGeometry(0.6, 0.8, 0.5);
       const bodyMat = new THREE.MeshStandardMaterial({
-        color: 0xff2244,
+        color: 0x00ffcc,
         roughness: 0.3,
+        metalness: 0.2,
       });
-      const marioBody = new THREE.Mesh(bodyGeo, bodyMat);
-      marioBody.position.y = 0.5;
-      marioGroup.add(marioBody);
+      const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+      bodyMesh.position.y = 0.4;
+      characterGroup.add(bodyMesh);
 
-      const hatGeo = new THREE.CylinderGeometry(0.3, 0.5, 0.22, 32);
-      const hatMat = new THREE.MeshStandardMaterial({ color: 0xbb0022 });
-      const marioHat = new THREE.Mesh(hatGeo, hatMat);
-      marioHat.position.set(0, 1.0, 0.05);
-      marioHat.rotation.x = 0.1;
-      marioGroup.add(marioHat);
+      // Head
+      const headGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+      const headMat = new THREE.MeshStandardMaterial({
+        color: 0xffaa00,
+        roughness: 0.2,
+      });
+      const headMesh = new THREE.Mesh(headGeo, headMat);
+      headMesh.position.y = 1.0;
+      characterGroup.add(headMesh);
 
-      scene.add(marioGroup);
+      scene.add(characterGroup);
 
-      // 7. Ultra High-Resolution 3D Floating Banner (Top 33% Zone ~ Y: 4.8)
+      // Direct Bounding/Vision Box Auto-Align
+      const visionBox = new THREE.Box3().setFromObject(characterGroup);
+      const boxCenter = visionBox.getCenter(new THREE.Vector3());
+      // Align Pivot Center
+      characterGroup.position.x -= boxCenter.x;
+
+      // 7. High-Resolution Floating Secret Banner (Top 33% Zone ~ Y: 4.8)
       function createHighResBanner(text) {
         const canvas = document.createElement("canvas");
-        canvas.width = 1024; // Ultra High-Res
+        canvas.width = 1024;
         canvas.height = 512;
         const ctx = canvas.getContext("2d");
 
-        // Banner Glass-Dark Background
         ctx.fillStyle = "#0d1322";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Double Neon Border
         ctx.lineWidth = 14;
         ctx.strokeStyle = "#00ffcc";
         ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
@@ -188,7 +196,6 @@
         ctx.strokeStyle = "#ffaa00";
         ctx.strokeRect(25, 25, canvas.width - 50, canvas.height - 50);
 
-        // High-Res Typography
         ctx.fillStyle = "#ffffff";
         ctx.font = "900 52px Arial, sans-serif";
         ctx.textAlign = "center";
@@ -212,14 +219,14 @@
         });
 
         const mesh = new THREE.Mesh(bannerGeo, bannerMat);
-        mesh.position.set(0, 2.8, 0); // Start inside the box
+        mesh.position.set(0, 2.8, 0);
         return mesh;
       }
 
       let secretBanner = createHighResBanner("MISSION ACCOMPLISHED");
       scene.add(secretBanner);
 
-      // 8. Game Logic & Controls
+      // 8. Control & Jump Mechanics
       let spacePresses = 0;
       let isShiftPressed = false;
       let isJumping = false;
@@ -231,51 +238,41 @@
       const spaceCountUI = document.getElementById("space-count");
       const shiftStatusUI = document.getElementById("shift-status");
 
-      // Reset Functionality
       function resetScene() {
         isBannerRevealed = false;
         isJumping = false;
         spacePresses = 0;
         spaceCountUI.innerText = 0;
 
-        // Reset Box
         questionBlock.position.set(0, 2.8, 0);
         questionBlock.material.color.setHex(activeBlockColor);
         questionBlock.material.emissive.setHex(0x442200);
 
-        // Reset Banner
         secretBanner.position.set(0, 2.8, 0);
         secretBanner.material.opacity = 0;
 
-        // Reset Mario
-        marioGroup.position.set(0, 0, 0);
+        characterGroup.position.set(0, 0, 0);
       }
 
       window.addEventListener("keydown", (e) => {
-        // 'V' for Hint Toggle
         if (e.key === "v" || e.key === "V") {
           hintBox.style.display =
             hintBox.style.display === "none" || hintBox.style.display === ""
               ? "block"
               : "none";
         }
-
-        // 'R' for Reset
         if (e.key === "r" || e.key === "R") {
           resetScene();
         }
-
         if (e.code === "Space") {
           spacePresses++;
           spaceCountUI.innerText = spacePresses;
         }
-
         if (e.key === "Shift") {
           isShiftPressed = true;
           shiftStatusUI.innerText = "ON";
         }
 
-        // Trigger Super Jump Condition
         if (spacePresses >= 2 && isShiftPressed && !isJumping) {
           isJumping = true;
           jumpProgress = 0;
@@ -291,29 +288,29 @@
         }
       });
 
-      // 9. Animation Loop
+      // 9. Main Render Loop
       function animate() {
         requestAnimationFrame(animate);
 
-        // Mario Patrol Motion
+        // Patrol Circular Orbit
         if (!isJumping) {
           angle += 0.025;
-          marioGroup.position.x = Math.cos(angle) * 1.8;
-          marioGroup.position.z = Math.sin(angle) * 1.8;
-          marioGroup.rotation.y = -angle + Math.PI / 2;
+          characterGroup.position.x = Math.cos(angle) * 1.8;
+          characterGroup.position.z = Math.sin(angle) * 1.8;
+          characterGroup.rotation.y = -angle + Math.PI / 2;
         } else {
-          // High Jump towards Block
+          // High Jump Physics
           jumpProgress += 0.04;
 
-          marioGroup.position.x += (0 - marioGroup.position.x) * 0.15;
-          marioGroup.position.z += (0 - marioGroup.position.z) * 0.15;
+          characterGroup.position.x += (0 - characterGroup.position.x) * 0.15;
+          characterGroup.position.z += (0 - characterGroup.position.z) * 0.15;
 
           const jumpHeight = Math.sin(jumpProgress * Math.PI) * 2.6;
-          marioGroup.position.y = jumpHeight;
+          characterGroup.position.y = jumpHeight;
 
-          // Hit Detection with Box
-          if (jumpProgress >= 0.48 && marioGroup.position.y >= 2.0) {
-            questionBlock.position.y = 3.1; // Punch Box Up
+          // Box Collision Detection
+          if (jumpProgress >= 0.48 && characterGroup.position.y >= 2.0) {
+            questionBlock.position.y = 3.1;
             questionBlock.material.color.setHex(usedBlockColor);
             questionBlock.material.emissive.setHex(0x000000);
             isBannerRevealed = true;
@@ -321,12 +318,12 @@
 
           if (jumpProgress >= 1) {
             isJumping = false;
-            marioGroup.position.y = 0;
-            questionBlock.position.y = 2.8; // Return Box to middle third
+            characterGroup.position.y = 0;
+            questionBlock.position.y = 2.8;
           }
         }
 
-        // Banner Ejection to Top 33% Zone (Y: 4.8)
+        // Banner Ejection to Top Zone (Y: 4.8)
         if (isBannerRevealed) {
           if (secretBanner.position.y < 4.8) {
             secretBanner.position.y += 0.05;
@@ -334,12 +331,10 @@
           if (secretBanner.material.opacity < 1) {
             secretBanner.material.opacity += 0.08;
           }
-          // Gentle Floating Wave
           secretBanner.position.y += Math.sin(Date.now() * 0.003) * 0.002;
           secretBanner.rotation.y = Math.sin(Date.now() * 0.001) * 0.05;
         }
 
-        // Slow Box Rotation
         questionBlock.rotation.y += 0.01;
 
         renderer.render(scene, camera);
@@ -347,7 +342,7 @@
 
       animate();
 
-      // Responsive Resizing
+      // Window Resizing
       window.addEventListener("resize", () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
