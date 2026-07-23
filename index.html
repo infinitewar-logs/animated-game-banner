@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Secret 3D Mario Quest</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        background-color: #0d0e15;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+      #hint-box {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        color: #00ffcc;
+        background: rgba(13, 14, 21, 0.85);
+        border: 1px solid #00ffcc;
+        box-shadow: 0 0 10px rgba(0, 255, 204, 0.3);
+        padding: 12px 18px;
+        border-radius: 8px;
+        pointer-events: none;
+        display: none; /* Hidden by default! Press 'V' to toggle */
+        font-size: 14px;
+      }
+      #v-prompt {
+        position: absolute;
+        bottom: 15px;
+        left: 20px;
+        color: rgba(255, 255, 255, 0.4);
+        font-size: 12px;
+        pointer-events: none;
+      }
+    </style>
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  </head>
+  <body>
+    <div id="hint-box">
+      🕹️ <b>Top Secret Protocol:</b><br />
+      1. Press <b>SPACE</b> twice<br />
+      2. Hold <b>SHIFT</b> to launch Super Jump!<br />
+      <small
+        >Space Count: <span id="space-count">0</span> | Shift:
+        <span id="shift-status">OFF</span></small
+      >
+    </div>
+
+    <div id="v-prompt">Press [ V ] for developer hints</div>
+
+    <script>
+      // 1. Scene, Camera, Renderer Setup
+      const scene = new THREE.Scene();
+      // Atmospheric Night Fog
+      scene.background = new THREE.Color(0x0a0c16);
+      scene.fog = new THREE.FogExp2(0x0a0c16, 0.035);
+
+      const camera = new THREE.PerspectiveCamera(
+        60,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000,
+      );
+      camera.position.set(0, 3.5, 9);
+      camera.lookAt(0, 1.8, 0);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      document.body.appendChild(renderer.domElement);
+
+      // 2. Neon & Dynamic Lighting
+      const ambientLight = new THREE.AmbientLight(0x3a2d54, 1.2); // Purple ambient ambient light
+      scene.add(ambientLight);
+
+      // Main Spotlight over the block
+      const spotLight = new THREE.SpotLight(0xffaa00, 2);
+      spotLight.position.set(0, 10, 2);
+      spotLight.castShadow = true;
+      spotLight.angle = Math.PI / 4;
+      scene.add(spotLight);
+
+      // Subtle Blue Fill Light from below
+      const rimLight = new THREE.DirectionalLight(0x00d2ff, 0.8);
+      rimLight.position.set(-5, 2, -5);
+      scene.add(rimLight);
+
+      // 3. Cyber Grass Floor
+      const floorGeo = new THREE.PlaneGeometry(30, 30);
+      const floorMat = new THREE.MeshStandardMaterial({
+        color: 0x112233,
+        roughness: 0.6,
+        metalness: 0.2,
+      });
+      const floor = new THREE.Mesh(floorGeo, floorMat);
+      floor.rotation.x = -Math.PI / 2;
+      floor.receiveShadow = true;
+      scene.add(floor);
+
+      // Grid overlay on floor for cool look
+      const grid = new THREE.GridHelper(30, 30, 0x00ffcc, 0x1e293b);
+      grid.position.y = 0.01;
+      scene.add(grid);
+
+      // 4. Glowing Minecraft Question Block
+      const cubeGeo = new THREE.BoxGeometry(1.2, 1.2, 1.2);
+      const cubeMat = new THREE.MeshStandardMaterial({
+        color: 0xffaa00,
+        roughness: 0.2,
+        metalness: 0.5,
+        emissive: 0x332200,
+      });
+      const questionBlock = new THREE.Mesh(cubeGeo, cubeMat);
+      questionBlock.position.set(0, 4, 0);
+      questionBlock.castShadow = true;
+      scene.add(questionBlock);
+
+      // 5. Stylized Mario Baby Character
+      const marioGroup = new THREE.Group();
+
+      // Body (Capsule / Rounded Red Shape)
+      const bodyGeo = new THREE.SphereGeometry(0.5, 32, 16);
+      bodyGeo.scale(1, 1.2, 1);
+      const bodyMat = new THREE.MeshStandardMaterial({
+        color: 0xff3355,
+        roughness: 0.3,
+      });
+      const marioBody = new THREE.Mesh(bodyGeo, bodyMat);
+      marioBody.position.y = 0.6;
+      marioBody.castShadow = true;
+      marioGroup.add(marioBody);
+
+      // Glowing Cap
+      const hatGeo = new THREE.CylinderGeometry(0.35, 0.55, 0.25, 32);
+      const hatMat = new THREE.MeshStandardMaterial({ color: 0xcc0033 });
+      const marioHat = new THREE.Mesh(hatGeo, hatMat);
+      marioHat.position.set(0, 1.15, 0.05);
+      marioHat.rotation.x = 0.1;
+      marioGroup.add(marioHat);
+
+      scene.add(marioGroup);
+
+      // 6. Dynamic 3D Floating Banner Mesh (Created via 2D Canvas)
+      function create3DTextBanner(text) {
+        const canvas = document.createElement("canvas");
+        canvas.width = 512;
+        canvas.height = 256;
+        const ctx = canvas.getContext("2d");
+
+        // Canvas Background
+        ctx.fillStyle = "#111827";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.lineWidth = 10;
+        ctx.strokeStyle = "#00ffcc";
+        ctx.strokeRect(5, 5, canvas.width - 10, canvas.height - 10);
+
+        // Banner Text
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "Bold 28px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("⚡ SECRET UNLOCKED ⚡", canvas.width / 2, 70);
+
+        ctx.fillStyle = "#00ffcc";
+        ctx.font = "22px Arial";
+        ctx.fillText(text, canvas.width / 2, 140);
+
+        ctx.fillStyle = "#ffaa00";
+        ctx.font = "16px Arial";
+        ctx.fillText("🤫 Only You & Me Know This!", canvas.width / 2, 195);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        const bannerGeo = new THREE.PlaneGeometry(3.5, 1.75);
+        const bannerMat = new THREE.MeshBasicMaterial({
+          map: texture,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0,
+        });
+
+        const mesh = new THREE.Mesh(bannerGeo, bannerMat);
+        mesh.position.set(0, 4, 0); // Spawns inside block
+        return mesh;
+      }
+
+      const secretBanner = create3DTextBanner("MISSION ACCOMPLISHED");
+      scene.add(secretBanner);
+
+      // 7. Logic & Control Variables
+      let spacePresses = 0;
+      let isShiftPressed = false;
+      let isJumping = false;
+      let jumpProgress = 0;
+      let angle = 0;
+      let isBannerRevealed = false;
+
+      const hintBox = document.getElementById("hint-box");
+      const spaceCountUI = document.getElementById("space-count");
+      const shiftStatusUI = document.getElementById("shift-status");
+
+      // Keyboard Controls
+      window.addEventListener("keydown", (e) => {
+        // Hint Toggle via 'V' Key
+        if (e.key === "v" || e.key === "V") {
+          hintBox.style.display =
+            hintBox.style.display === "none" || hintBox.style.display === ""
+              ? "block"
+              : "none";
+        }
+
+        if (e.code === "Space") {
+          spacePresses++;
+          spaceCountUI.innerText = spacePresses;
+        }
+
+        if (e.key === "Shift") {
+          isShiftPressed = true;
+          shiftStatusUI.innerText = "ON";
+        }
+
+        // Secret Trigger Condition Check
+        if (spacePresses >= 2 && isShiftPressed && !isJumping) {
+          isJumping = true;
+          jumpProgress = 0;
+          spacePresses = 0;
+          spaceCountUI.innerText = 0;
+        }
+      });
+
+      window.addEventListener("keyup", (e) => {
+        if (e.key === "Shift") {
+          isShiftPressed = false;
+          shiftStatusUI.innerText = "OFF";
+        }
+      });
+
+      // 8. Animation & Render Loop
+      function animate() {
+        requestAnimationFrame(animate);
+
+        // Character Patrol Loop (When not jumping)
+        if (!isJumping) {
+          angle += 0.025;
+          marioGroup.position.x = Math.cos(angle) * 2.2;
+          marioGroup.position.z = Math.sin(angle) * 2.2;
+          marioGroup.rotation.y = -angle + Math.PI / 2;
+        } else {
+          // High Jump Physics Sequence
+          jumpProgress += 0.035;
+
+          // Move towards block center
+          marioGroup.position.x += (0 - marioGroup.position.x) * 0.12;
+          marioGroup.position.z += (0 - marioGroup.position.z) * 0.12;
+
+          const jumpHeight = Math.sin(jumpProgress * Math.PI) * 3.8;
+          marioGroup.position.y = jumpHeight;
+
+          // Block Hit Check
+          if (jumpProgress >= 0.48 && marioGroup.position.y >= 3.0) {
+            questionBlock.position.y = 4.3; // Punch block up
+            questionBlock.material.color.setHex(0x555566); // Turn activated gray
+            questionBlock.material.emissive.setHex(0x000000);
+            isBannerRevealed = true;
+          }
+
+          if (jumpProgress >= 1) {
+            isJumping = false;
+            marioGroup.position.y = 0;
+            questionBlock.position.y = 4.0; // Reset block position
+          }
+        }
+
+        // 3D Banner Ejection & Floating Animation
+        if (isBannerRevealed) {
+          // Float Upwards smoothly
+          if (secretBanner.position.y < 6.2) {
+            secretBanner.position.y += 0.04;
+          }
+          // Fade in Banner opacity
+          if (secretBanner.material.opacity < 1) {
+            secretBanner.material.opacity += 0.05;
+          }
+          // Floating Sine-wave oscillation
+          secretBanner.position.y += Math.sin(Date.now() * 0.003) * 0.003;
+          secretBanner.rotation.y = Math.sin(Date.now() * 0.001) * 0.1;
+        }
+
+        // Rotate block slowly
+        questionBlock.rotation.y += 0.01;
+
+        renderer.render(scene, camera);
+      }
+
+      animate();
+
+      // Responsive Resizing
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    </script>
+  </body>
+</html>
