@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>3D Quest - Direct Simple Model Edition</title>
+    <title>3D Quest - Robot Fixed Rotation</title>
     <style>
       body {
         margin: 0;
@@ -22,7 +22,7 @@
         padding: 14px 20px;
         border-radius: 10px;
         pointer-events: none;
-        display: none; /* Press 'V' to toggle */
+        display: none;
         font-size: 14px;
         z-index: 10;
       }
@@ -35,8 +35,10 @@
         pointer-events: none;
       }
     </style>
-    <!-- Three.js CDN -->
+    <!-- Three.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- GLTF Model Loader -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
   </head>
   <body>
     <div id="hint-box">
@@ -53,8 +55,9 @@
     <div id="controls-prompt">Press [ V ] for Hints | Press [ R ] to Reset</div>
 
     <script>
-      // 1. Scene & Camera Setup (33% Ground, 33% Box, 33% Banner)
+      // 1. Scene & Camera Setup
       const scene = new THREE.Scene();
+      const clock = new THREE.Clock();
 
       const camera = new THREE.PerspectiveCamera(
         50,
@@ -72,7 +75,7 @@
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       document.body.appendChild(renderer.domElement);
 
-      // 2. Glowing Ambient Backdrop Mesh
+      // 2. Ambient Dark Glow Background
       const bgGeo = new THREE.PlaneGeometry(30, 20);
       const bgCanvas = document.createElement("canvas");
       bgCanvas.width = 512;
@@ -94,7 +97,7 @@
       scene.add(backgroundMesh);
 
       // 3. Lighting Setup
-      const ambientLight = new THREE.AmbientLight(0x4a3b69, 1.2);
+      const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
       scene.add(ambientLight);
 
       const mainLight = new THREE.PointLight(0xffaa00, 2, 15);
@@ -105,7 +108,7 @@
       blueRim.position.set(-4, 6, 2);
       scene.add(blueRim);
 
-      // 4. Ombre / Radial Base Mesh (Floor)
+      // 4. Ombre Base Floor
       const floorGeo = new THREE.PlaneGeometry(16, 16);
       const floorCanvas = document.createElement("canvas");
       floorCanvas.width = 512;
@@ -131,7 +134,7 @@
       floor.position.y = 0;
       scene.add(floor);
 
-      // 5. Question Block (Middle 33% Zone ~ Y: 2.8)
+      // 5. Question Block
       const cubeGeo = new THREE.BoxGeometry(1.1, 1.1, 1.1);
       const activeBlockColor = 0xffaa00;
       const usedBlockColor = 0x444455;
@@ -146,39 +149,40 @@
       questionBlock.position.set(0, 2.8, 0);
       scene.add(questionBlock);
 
-      // 6. Direct Simple Character (Procedural Mesh - Zero File Dependencies)
+      // 6. ROBOT MODEL LOADING (GLTF)
       const characterGroup = new THREE.Group();
-
-      // Body Box (Vision Mesh)
-      const bodyGeo = new THREE.BoxGeometry(0.6, 0.8, 0.5);
-      const bodyMat = new THREE.MeshStandardMaterial({
-        color: 0x00ffcc,
-        roughness: 0.3,
-        metalness: 0.2,
-      });
-      const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
-      bodyMesh.position.y = 0.4;
-      characterGroup.add(bodyMesh);
-
-      // Head
-      const headGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
-      const headMat = new THREE.MeshStandardMaterial({
-        color: 0xffaa00,
-        roughness: 0.2,
-      });
-      const headMesh = new THREE.Mesh(headGeo, headMat);
-      headMesh.position.y = 1.0;
-      characterGroup.add(headMesh);
-
       scene.add(characterGroup);
+      let mixer = null;
 
-      // Direct Bounding/Vision Box Auto-Align
-      const visionBox = new THREE.Box3().setFromObject(characterGroup);
-      const boxCenter = visionBox.getCenter(new THREE.Vector3());
-      // Align Pivot Center
-      characterGroup.position.x -= boxCenter.x;
+      const loader = new THREE.GLTFLoader();
 
-      // 7. High-Resolution Floating Secret Banner (Top 33% Zone ~ Y: 4.8)
+      const modelUrl =
+        "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/models/gltf/RobotExpressive/RobotExpressive.glb";
+
+      loader.load(modelUrl, (gltf) => {
+        const robot = gltf.scene;
+        robot.scale.set(0.35, 0.35, 0.35);
+        robot.position.set(0, 0, 0);
+
+        // 🔄 ROTATION FIX: Model face flipped by 180 degrees (Math.PI)
+        robot.rotation.y = Math.PI;
+
+        characterGroup.add(robot);
+
+        // Setup Animation
+        if (gltf.animations && gltf.animations.length > 0) {
+          mixer = new THREE.AnimationMixer(robot);
+          const runClip =
+            THREE.AnimationClip.findByName(gltf.animations, "Running") ||
+            gltf.animations[0];
+          if (runClip) {
+            const action = mixer.clipAction(runClip);
+            action.play();
+          }
+        }
+      });
+
+      // 7. High-Res Secret Banner
       function createHighResBanner(text) {
         const canvas = document.createElement("canvas");
         canvas.width = 1024;
@@ -226,7 +230,7 @@
       let secretBanner = createHighResBanner("MISSION ACCOMPLISHED");
       scene.add(secretBanner);
 
-      // 8. Control & Jump Mechanics
+      // 8. Game Mechanics & Controls
       let spacePresses = 0;
       let isShiftPressed = false;
       let isJumping = false;
@@ -292,14 +296,21 @@
       function animate() {
         requestAnimationFrame(animate);
 
-        // Patrol Circular Orbit
+        const delta = clock.getDelta();
+
+        if (mixer) {
+          mixer.update(delta);
+        }
+
+        // Patrol Orbit - Face forward along tangential vector
         if (!isJumping) {
           angle += 0.025;
           characterGroup.position.x = Math.cos(angle) * 1.8;
           characterGroup.position.z = Math.sin(angle) * 1.8;
-          characterGroup.rotation.y = -angle + Math.PI / 2;
+
+          // 🔄 Correct Face Facing Angle
+          characterGroup.rotation.y = -angle - Math.PI / 2;
         } else {
-          // High Jump Physics
           jumpProgress += 0.04;
 
           characterGroup.position.x += (0 - characterGroup.position.x) * 0.15;
@@ -308,7 +319,6 @@
           const jumpHeight = Math.sin(jumpProgress * Math.PI) * 2.6;
           characterGroup.position.y = jumpHeight;
 
-          // Box Collision Detection
           if (jumpProgress >= 0.48 && characterGroup.position.y >= 2.0) {
             questionBlock.position.y = 3.1;
             questionBlock.material.color.setHex(usedBlockColor);
@@ -323,7 +333,6 @@
           }
         }
 
-        // Banner Ejection to Top Zone (Y: 4.8)
         if (isBannerRevealed) {
           if (secretBanner.position.y < 4.8) {
             secretBanner.position.y += 0.05;
@@ -342,7 +351,6 @@
 
       animate();
 
-      // Window Resizing
       window.addEventListener("resize", () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
