@@ -3,36 +3,53 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>3D Quest - Question Block & Mario</title>
+    <title>3D Quest - Dual Theme Mario Edition</title>
     <style>
       body {
         margin: 0;
         overflow: hidden;
         background-color: #05070f;
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        transition: background-color 0.5s ease;
       }
-      #hint-box {
+      #hud-container {
         position: absolute;
         top: 20px;
         left: 20px;
-        color: #00ffcc;
-        background: rgba(10, 14, 26, 0.9);
-        border: 1px solid #00ffcc;
-        box-shadow: 0 0 12px rgba(0, 255, 204, 0.4);
-        padding: 14px 20px;
-        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
         pointer-events: none;
-        display: none;
-        font-size: 14px;
         z-index: 10;
+      }
+      .hud-badge {
+        color: #00ffcc;
+        background: rgba(10, 14, 26, 0.85);
+        border: 1px solid #00ffcc;
+        box-shadow: 0 0 12px rgba(0, 255, 204, 0.3);
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+      }
+      #theme-badge {
+        color: #ffaa00;
+        border-color: #ffaa00;
+        box-shadow: 0 0 12px rgba(255, 170, 0, 0.3);
+        font-weight: bold;
+      }
+      #hint-box {
+        display: none;
       }
       #controls-prompt {
         position: absolute;
         bottom: 15px;
         left: 20px;
-        color: rgba(255, 255, 255, 0.5);
-        font-size: 12px;
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 13px;
         pointer-events: none;
+        background: rgba(0, 0, 0, 0.4);
+        padding: 6px 12px;
+        border-radius: 6px;
       }
     </style>
     <!-- Three.js & GLTFLoader CDN -->
@@ -40,18 +57,26 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
   </head>
   <body>
-    <div id="hint-box">
-      🕹️ <b>Secret Protocol:</b><br />
-      1. Press <b>SPACE</b> twice<br />
-      2. Hold <b>SHIFT</b> to Super Jump!<br />
-      3. Press <b>R</b> to Reset Box & Banner!<br />
-      <small
-        >Space Count: <span id="space-count">0</span> | Shift:
-        <span id="shift-status">OFF</span></small
-      >
+    <div id="hud-container">
+      <div id="theme-badge" class="hud-badge">
+        MODE: DARK CYBERPUNK (mario.glb)
+      </div>
+      <div id="hint-box" class="hud-badge">
+        🕹️ <b>Secret Protocol:</b><br />
+        1. Press <b>SPACE</b> twice<br />
+        2. Hold <b>SHIFT</b> to Super Jump!<br />
+        3. Press <b>R</b> to Reset Box & Banner!<br />
+        <small
+          >Space Count: <span id="space-count">0</span> | Shift:
+          <span id="shift-status">OFF</span></small
+        >
+      </div>
     </div>
 
-    <div id="controls-prompt">Press [ V ] for Hints | Press [ R ] to Reset</div>
+    <div id="controls-prompt">
+      Press [ <b>T</b> ] Toggle Theme/Model | Press [ <b>V</b> ] Hints | Press [
+      <b>R</b> ] Reset
+    </div>
 
     <script>
       // 1. Scene & Camera Setup
@@ -73,19 +98,24 @@
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       document.body.appendChild(renderer.domElement);
 
-      // 2. Ambient Backdrop
+      // 2. Dynamic Lighting Setup
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      scene.add(ambientLight);
+
+      const mainLight = new THREE.PointLight(0xffaa00, 2, 15);
+      mainLight.position.set(0, 5, 3);
+      scene.add(mainLight);
+
+      const rimLight = new THREE.DirectionalLight(0x00d2ff, 0.8);
+      rimLight.position.set(-4, 6, 2);
+      scene.add(rimLight);
+
+      // 3. Dynamic Background Canvas Mesh
       const bgGeo = new THREE.PlaneGeometry(30, 20);
       const bgCanvas = document.createElement("canvas");
       bgCanvas.width = 512;
       bgCanvas.height = 512;
       const bgCtx = bgCanvas.getContext("2d");
-      const bgGlow = bgCtx.createRadialGradient(256, 256, 10, 256, 256, 250);
-      bgGlow.addColorStop(0, "#1a1f3d");
-      bgGlow.addColorStop(0.5, "#0b0e1e");
-      bgGlow.addColorStop(1, "#030408");
-      bgCtx.fillStyle = bgGlow;
-      bgCtx.fillRect(0, 0, 512, 512);
-
       const bgTexture = new THREE.CanvasTexture(bgCanvas);
       const backgroundMesh = new THREE.Mesh(
         bgGeo,
@@ -94,33 +124,12 @@
       backgroundMesh.position.set(0, 5, -8);
       scene.add(backgroundMesh);
 
-      // 3. Lighting Setup
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
-      scene.add(ambientLight);
-
-      const mainLight = new THREE.PointLight(0xffaa00, 2, 15);
-      mainLight.position.set(0, 5, 3);
-      scene.add(mainLight);
-
-      const blueRim = new THREE.DirectionalLight(0x00d2ff, 0.8);
-      blueRim.position.set(-4, 6, 2);
-      scene.add(blueRim);
-
-      // 4. Floor (Ombre Base)
+      // 4. Dynamic Floor Setup
       const floorGeo = new THREE.PlaneGeometry(16, 16);
       const floorCanvas = document.createElement("canvas");
       floorCanvas.width = 512;
       floorCanvas.height = 512;
       const fCtx = floorCanvas.getContext("2d");
-
-      const floorGrad = fCtx.createRadialGradient(256, 256, 0, 256, 256, 256);
-      floorGrad.addColorStop(0, "#00ffcc");
-      floorGrad.addColorStop(0.3, "#0d3b66");
-      floorGrad.addColorStop(0.8, "#0d1117");
-      floorGrad.addColorStop(1, "#05070f");
-      fCtx.fillStyle = floorGrad;
-      fCtx.fillRect(0, 0, 512, 512);
-
       const floorTexture = new THREE.CanvasTexture(floorCanvas);
       const floorMat = new THREE.MeshStandardMaterial({
         map: floorTexture,
@@ -131,122 +140,243 @@
       floor.position.y = 0;
       scene.add(floor);
 
-      // 5. Dynamic Question Mark Texture Generator 🎨
-      function createQuestionBlockTexture(isUsed = false) {
+      // 5. Question Block Texture & Geometry
+      function createQuestionBlockTexture(isDark = true, isUsed = false) {
         const canvas = document.createElement("canvas");
         canvas.width = 512;
         canvas.height = 512;
         const ctx = canvas.getContext("2d");
 
-        // Background Fill
-        ctx.fillStyle = isUsed ? "#444455" : "#ffaa00";
+        const baseColor = isUsed ? "#444455" : isDark ? "#ffaa00" : "#ffd700";
+        ctx.fillStyle = baseColor;
         ctx.fillRect(0, 0, 512, 512);
 
-        // Outer Border
         ctx.lineWidth = 24;
-        ctx.strokeStyle = isUsed ? "#222233" : "#b36b00";
+        ctx.strokeStyle = isUsed ? "#222233" : isDark ? "#b36b00" : "#ccaa00";
         ctx.strokeRect(12, 12, 488, 488);
 
-        // Inner Corner Screws/Rivets
-        ctx.fillStyle = isUsed ? "#222233" : "#7a4900";
-        const dotPositions = [
+        ctx.fillStyle = isUsed ? "#222233" : isDark ? "#7a4900" : "#886600";
+        [
           [40, 40],
           [472, 40],
           [40, 472],
           [472, 472],
-        ];
-        dotPositions.forEach(([x, y]) => {
+        ].forEach(([x, y]) => {
           ctx.beginPath();
           ctx.arc(x, y, 12, 0, Math.PI * 2);
           ctx.fill();
         });
 
-        // Draw '?' Symbol
         if (!isUsed) {
           ctx.fillStyle = "#ffffff";
           ctx.font = "900 320px Arial, sans-serif";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          // Subtle text shadow for 3D depth inside the block
           ctx.shadowColor = "rgba(0,0,0,0.3)";
           ctx.shadowOffsetX = 6;
           ctx.shadowOffsetY = 6;
           ctx.fillText("?", 256, 256);
-        } else {
-          // Empty block detail when used
-          ctx.fillStyle = "#222233";
-          ctx.fillRect(180, 230, 152, 50);
         }
 
         return new THREE.CanvasTexture(canvas);
       }
 
-      // Question Block Creation (Applied Texture to All 6 Faces)
-      const activeTexture = createQuestionBlockTexture(false);
-      const usedTexture = createQuestionBlockTexture(true);
-
       const cubeGeo = new THREE.BoxGeometry(1.2, 1.2, 1.2);
-      const activeMaterial = new THREE.MeshStandardMaterial({
-        map: activeTexture,
+      const questionBlockMat = new THREE.MeshStandardMaterial({
         roughness: 0.3,
         metalness: 0.1,
       });
-      const usedMaterial = new THREE.MeshStandardMaterial({
-        map: usedTexture,
-        roughness: 0.5,
-        metalness: 0.1,
-      });
-
-      const questionBlock = new THREE.Mesh(cubeGeo, activeMaterial);
+      const questionBlock = new THREE.Mesh(cubeGeo, questionBlockMat);
       questionBlock.position.set(0, 2.8, 0);
       scene.add(questionBlock);
 
-      // 6. Mario / Character Group (Static Positioned Directly Under Block)
+      // 6. Mario Character Management & GLB Loading
       const characterGroup = new THREE.Group();
       characterGroup.position.set(0, 0, 0);
       scene.add(characterGroup);
 
-      // Load Mario GLB (Fallback to Mesh if file missing)
       const loader = new THREE.GLTFLoader();
-      loader.load(
-        "./mario.glb",
-        (gltf) => {
-          const mario = gltf.scene;
+      let loadedModels = { dark: null, happy: null };
+      let isDarkMode = true;
 
-          const box = new THREE.Box3().setFromObject(mario);
-          const size = box.getSize(new THREE.Vector3());
-          const scale = 1.2 / size.y;
-          mario.scale.set(scale, scale, scale);
+      function loadMarioModel(filePath, key) {
+        loader.load(
+          filePath,
+          (gltf) => {
+            const model = gltf.scene;
 
-          mario.position.set(0, 0, 0);
-          characterGroup.add(mario);
-        },
-        undefined,
-        (error) => {
-          console.log("GLB file fallback applied");
+            // Auto Scale & Align Bounds
+            const box = new THREE.Box3().setFromObject(model);
+            const size = box.getSize(new THREE.Vector3());
+            const scale = 1.2 / (size.y || 1);
+            model.scale.set(scale, scale, scale);
 
-          const bodyGeo = new THREE.BoxGeometry(0.6, 0.8, 0.5);
-          const bodyMat = new THREE.MeshStandardMaterial({
-            color: 0xd63031,
-            roughness: 0.3,
-          });
-          const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
-          bodyMesh.position.y = 0.4;
+            const center = box.getCenter(new THREE.Vector3());
+            model.position.x -= center.x * scale;
+            model.position.z -= center.z * scale;
 
-          const headGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
-          const headMat = new THREE.MeshStandardMaterial({
-            color: 0xffeaa7,
-            roughness: 0.2,
-          });
-          const headMesh = new THREE.Mesh(headGeo, headMat);
-          headMesh.position.y = 1.0;
+            loadedModels[key] = model;
 
-          characterGroup.add(bodyMesh);
-          characterGroup.add(headMesh);
-        },
-      );
+            // If loaded model matches current mode, display it immediately
+            if (
+              (key === "dark" && isDarkMode) ||
+              (key === "happy" && !isDarkMode)
+            ) {
+              updateCharacterModel();
+            }
+          },
+          undefined,
+          (err) => {
+            console.warn(
+              `Could not load ${filePath}, generating fallback mesh.`,
+            );
+            // Fallback procedural mesh
+            const fallbackGroup = new THREE.Group();
+            const body = new THREE.Mesh(
+              new THREE.BoxGeometry(0.6, 0.8, 0.5),
+              new THREE.MeshStandardMaterial({
+                color: key === "dark" ? 0x222244 : 0xe74c3c,
+              }),
+            );
+            body.position.y = 0.4;
+            const head = new THREE.Mesh(
+              new THREE.BoxGeometry(0.4, 0.4, 0.4),
+              new THREE.MeshStandardMaterial({ color: 0xffeaa7 }),
+            );
+            head.position.y = 1.0;
+            fallbackGroup.add(body, head);
 
-      // 7. Secret Banner (Top Zone ~ Y: 4.8)
+            loadedModels[key] = fallbackGroup;
+            if (
+              (key === "dark" && isDarkMode) ||
+              (key === "happy" && !isDarkMode)
+            ) {
+              updateCharacterModel();
+            }
+          },
+        );
+      }
+
+      // Load both Mario files
+      loadMarioModel("./mario.glb", "dark");
+      loadMarioModel("./marioBobble.glb", "happy");
+
+      function updateCharacterModel() {
+        // Clear current active meshes
+        while (characterGroup.children.length > 0) {
+          characterGroup.remove(characterGroup.children[0]);
+        }
+
+        const currentModel = isDarkMode
+          ? loadedModels.dark
+          : loadedModels.happy;
+        if (currentModel) {
+          characterGroup.add(currentModel);
+        }
+      }
+
+      // 7. Theme & Environment Switcher
+      const themeBadge = document.getElementById("theme-badge");
+
+      function applyTheme(isDark) {
+        isDarkMode = isDark;
+
+        if (isDarkMode) {
+          // Dark Cyberpunk Lighting & Background
+          document.body.style.backgroundColor = "#05070f";
+          ambientLight.color.setHex(0xffffff);
+          ambientLight.intensity = 0.6;
+          mainLight.color.setHex(0xffaa00);
+          rimLight.color.setHex(0x00d2ff);
+
+          // Background Radial Glow
+          const bgGlow = bgCtx.createRadialGradient(
+            256,
+            256,
+            10,
+            256,
+            256,
+            250,
+          );
+          bgGlow.addColorStop(0, "#1a1f3d");
+          bgGlow.addColorStop(0.5, "#0b0e1e");
+          bgGlow.addColorStop(1, "#030408");
+          bgCtx.fillStyle = bgGlow;
+          bgCtx.fillRect(0, 0, 512, 512);
+          bgTexture.needsUpdate = true;
+
+          // Floor Grad
+          const floorGrad = fCtx.createRadialGradient(
+            256,
+            256,
+            0,
+            256,
+            256,
+            256,
+          );
+          floorGrad.addColorStop(0, "#00ffcc");
+          floorGrad.addColorStop(0.3, "#0d3b66");
+          floorGrad.addColorStop(0.8, "#0d1117");
+          floorGrad.addColorStop(1, "#05070f");
+          fCtx.fillStyle = floorGrad;
+          fCtx.fillRect(0, 0, 512, 512);
+          floorTexture.needsUpdate = true;
+
+          themeBadge.innerText = "MODE: DARK CYBERPUNK (mario.glb)";
+          themeBadge.style.color = "#00ffcc";
+          themeBadge.style.borderColor = "#00ffcc";
+        } else {
+          // Happy Kiddish Mode Lighting & Background
+          document.body.style.backgroundColor = "#70c5ce";
+          ambientLight.color.setHex(0xffffff);
+          ambientLight.intensity = 1.2;
+          mainLight.color.setHex(0xfffaed);
+          rimLight.color.setHex(0xffd700);
+
+          // Sky Gradient
+          const bgGlow = bgCtx.createLinearGradient(0, 0, 0, 512);
+          bgGlow.addColorStop(0, "#3a9bdc");
+          bgGlow.addColorStop(0.7, "#87ceeb");
+          bgGlow.addColorStop(1, "#e0f6ff");
+          bgCtx.fillStyle = bgGlow;
+          bgCtx.fillRect(0, 0, 512, 512);
+          bgTexture.needsUpdate = true;
+
+          // Bright Green Grass Floor
+          const floorGrad = fCtx.createRadialGradient(
+            256,
+            256,
+            0,
+            256,
+            256,
+            256,
+          );
+          floorGrad.addColorStop(0, "#7bed9f");
+          floorGrad.addColorStop(0.5, "#2ed573");
+          floorGrad.addColorStop(0.8, "#26af5f");
+          floorGrad.addColorStop(1, "#1e8449");
+          fCtx.fillStyle = floorGrad;
+          fCtx.fillRect(0, 0, 512, 512);
+          floorTexture.needsUpdate = true;
+
+          themeBadge.innerText = "MODE: HAPPY KIDDISH (marioBobble.glb)";
+          themeBadge.style.color = "#ffd700";
+          themeBadge.style.borderColor = "#ffd700";
+        }
+
+        questionBlockMat.map = createQuestionBlockTexture(
+          isDarkMode,
+          isBannerRevealed,
+        );
+        questionBlockMat.needsUpdate = true;
+
+        updateCharacterModel();
+      }
+
+      // Initialize Dark Theme
+      applyTheme(true);
+
+      // 8. Secret Banner Setup
       function createHighResBanner(text) {
         const canvas = document.createElement("canvas");
         canvas.width = 1024;
@@ -294,7 +424,7 @@
       let secretBanner = createHighResBanner("MISSION ACCOMPLISHED");
       scene.add(secretBanner);
 
-      // 8. Game Controls & Jump Mechanics
+      // 9. Key Bindings & Mechanics
       let spacePresses = 0;
       let isShiftPressed = false;
       let isJumping = false;
@@ -312,7 +442,8 @@
         spaceCountUI.innerText = 0;
 
         questionBlock.position.set(0, 2.8, 0);
-        questionBlock.material = activeMaterial;
+        questionBlockMat.map = createQuestionBlockTexture(isDarkMode, false);
+        questionBlockMat.needsUpdate = true;
 
         secretBanner.position.set(0, 2.8, 0);
         secretBanner.material.opacity = 0;
@@ -321,6 +452,10 @@
       }
 
       window.addEventListener("keydown", (e) => {
+        // Toggle Theme/Model with 'T'
+        if (e.key === "t" || e.key === "T") {
+          applyTheme(!isDarkMode);
+        }
         if (e.key === "v" || e.key === "V") {
           hintBox.style.display =
             hintBox.style.display === "none" || hintBox.style.display === ""
@@ -354,23 +489,23 @@
         }
       });
 
-      // 9. Render Loop
+      // 10. Main Animation Loop
       function animate() {
         requestAnimationFrame(animate);
 
-        // Cube Rotation
+        // Block Continuous Rotation
         questionBlock.rotation.y += 0.015;
 
-        // Straight Vertical Jump Physics
+        // Jump Physics
         if (isJumping) {
           jumpProgress += 0.04;
           const jumpHeight = Math.sin(jumpProgress * Math.PI) * 2.2;
           characterGroup.position.y = jumpHeight;
 
-          // Collision with Box
           if (jumpProgress >= 0.48 && characterGroup.position.y >= 1.8) {
             questionBlock.position.y = 3.1;
-            questionBlock.material = usedMaterial; // Switch texture to used state
+            questionBlockMat.map = createQuestionBlockTexture(isDarkMode, true);
+            questionBlockMat.needsUpdate = true;
             isBannerRevealed = true;
           }
 
@@ -381,7 +516,7 @@
           }
         }
 
-        // Secret Banner Floating Animation
+        // Secret Banner Floating
         if (isBannerRevealed) {
           if (secretBanner.position.y < 4.8) {
             secretBanner.position.y += 0.05;
@@ -398,7 +533,7 @@
 
       animate();
 
-      // Window Resizing
+      // Responsive Window Resize
       window.addEventListener("resize", () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();

@@ -23,3 +23,16 @@ Excellenct cyber punk type edit by Gemini !!!
     2.	Vision Box / Center Auto-Alignment: Model direct standard bounds mate optimized chhe.
     3.	Exact 33-33-33 Camera Layout: Ground, Middle Box, and High-Res Secret Banner cleanly structured.
     4.	All Secret Controls: V for hints, 2x SPACE + SHIFT for Super Jump, ane R for instant Reset!
+
+### Multipe iterations went by
+
+search models also ,
+Very costly and ai dependancy in order to find an apt model
+Created and learn git branching and git checkout and push
+Created pull request and merged it to main
+
+Now has updated the task with following :
+
+What's included: 1. Press T on keyboard: Toggles between mario1.glb (Dark Cyberpunk Vibe) and mario2.glb (Happy Kiddish Vibe). 2. Dynamic Lighting & Environment Swap:
+• Dark Mode: Dark space backdrop, neon cyan floor, deep blue rim lighting, dark question block state.
+• Happy Mode: Bright sky blue background, grassy green vibrant floor, warm golden sunlight, bright cheerful yellow block. 3. Smooth Model Handling: Uses THREE.Box3() to auto-scale both models seamlessly so they both fit perfectly under the rotating Question Block without breaking position. 4. All Secret Mechanics Intact: 2x SPACE + SHIFT Super Jump, rotating ? block with textures, and floating banner reveal.
