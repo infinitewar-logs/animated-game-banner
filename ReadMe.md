@@ -1,38 +1,54 @@
-### Game Banner
+# 🎮 3D Quest: Interactive Mario Environment
 
-Code courtesy : Gemini Desktop application
-Inital
-Git Hub Steps :
-step 1: create repo in github
-step 2 : Open Vs code
-Step 3 : Clone repo from github
-Step 4 : Paste Url from github in the vscode main bar
-Step 5 : git add .
-Step 6 : git commit -m ""
-Step 7 : git push origin main
+An interactive 3D WebGL experience built with **Three.js** featuring dynamic lighting, procedural gradient environments, high-contrast texturing, and dual character/banner state toggles.
 
-Initial commit :
-Contains base foundation for the roaming object and static object
-Contains the banner details
-Contains hidden hint logic
-Excellenct cyber punk type edit by Gemini !!!
+---
 
-## branch details withAnimatorModel
+## 🌟 Key Features & Updates
 
-    1.	Zero Loading Issue / Direct Run: File local open karsho ke host karsho, ek sec ma direct chalsho without lag.
-    2.	Vision Box / Center Auto-Alignment: Model direct standard bounds mate optimized chhe.
-    3.	Exact 33-33-33 Camera Layout: Ground, Middle Box, and High-Res Secret Banner cleanly structured.
-    4.	All Secret Controls: V for hints, 2x SPACE + SHIFT for Super Jump, ane R for instant Reset!
+### 1. Dynamic Mode & Character Swapping (`T` Key)
 
-### Multipe iterations went by
+- **Model Switch:** Smoothly toggles between `mario.glb` _(Dark Cyberpunk Vibe)_ and `marioBobble.glb` _(Happy Kiddish Vibe)_ using `THREE.Box3()` for seamless auto-scaling and bounding alignment.
+- **Environment & Gradient Blending:**
+  - **Dark Cyberpunk Mode:** Deep space radial backdrop, glowing neon cyan floor, deep blue rim lighting, and high-contrast ambient glow.
+  - **Happy Kiddish Mode:** Soft multi-stop linear sky gradient (`#4a90e2` to `#b3e5fc`) merging naturally into a lush, radial green grass floor with warm sunlight.
 
-search models also ,
-Very costly and ai dependancy in order to find an apt model
-Created and learn git branching and git checkout and push
-Created pull request and merged it to main
+### 2. Mode-Specific Dynamic Secret Banner
 
-Now has updated the task with following :
+Hit the Question Block to trigger the floating secret banner. The high-resolution canvas text dynamically adapts depending on the active theme:
 
-What's included: 1. Press T on keyboard: Toggles between mario1.glb (Dark Cyberpunk Vibe) and mario2.glb (Happy Kiddish Vibe). 2. Dynamic Lighting & Environment Swap:
-• Dark Mode: Dark space backdrop, neon cyan floor, deep blue rim lighting, dark question block state.
-• Happy Mode: Bright sky blue background, grassy green vibrant floor, warm golden sunlight, bright cheerful yellow block. 3. Smooth Model Handling: Uses THREE.Box3() to auto-scale both models seamlessly so they both fit perfectly under the rotating Question Block without breaking position. 4. All Secret Mechanics Intact: 2x SPACE + SHIFT Super Jump, rotating ? block with textures, and floating banner reveal.
+- **Dark Cyberpunk Mode:** _"Good Night Sleep Well"_ 🌙
+- **Happy Kiddish Mode:** _"Good morning , Stay Bright"_ ☀️
+
+### 3. Secret Super Jump Protocol
+
+- **Interactive Combo:** Double press **`SPACE`**, hold **`SHIFT`**, and launch Mario into a Super Jump!
+- **Question Block Collision:** Mario hits the overhead `?` block, switching its texture to an "activated" state and releasing the floating Secret Banner into the sky.
+
+---
+
+## 🕹️ Controls & Hotkeys
+
+| Hotkey                     | Action                                                       |
+| :------------------------- | :----------------------------------------------------------- |
+| **`T`**                    | Toggle Theme Mode & Secret Banner Text                       |
+| **`V`**                    | Toggle On-Screen Hint Box                                    |
+| **`R`**                    | Instant Reset (Resets Block, Mario Position & Secret Banner) |
+| **`SPACE` (x2) + `SHIFT`** | Execute Super Jump to unlock the Secret Banner               |
+
+---
+
+## 🚀 Git & GitHub Workflow
+
+### 1. Repository Setup & Initial Commit
+
+```bash
+# Clone the repository
+git clone <YOUR_GITHUB_REPO_URL>
+cd <YOUR_REPO_NAME>
+
+# Add base files and initial commit
+git add .
+git commit -m "feat: base foundation for static/roaming objects and hint logic"
+git push origin main
+```

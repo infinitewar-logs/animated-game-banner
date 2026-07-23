@@ -1,0 +1,7 @@
+Technical Highlights & Optimization
+
+•	Zero-Lag Execution: Procedural canvas textures and lightweight GLTF models allow instantaneous run times locally or via static web hosting without asset loading stutter
+
+•	Bounding Box Alignment: Uses THREE.Box3() bounding calculation to dynamically calculate model height, auto-scaling and centering both 3D models beneath the rotating Question Block cleanly.
+
+•	Structured Camera Frame: Precise perspective layout keeping the Grass/Cyber Floor, Middle Question Block, and High-Res Floating Banner perfectly balanced within view.
