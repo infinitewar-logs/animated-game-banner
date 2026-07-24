@@ -20,9 +20,11 @@ export class Character {
   }
 
   setModels(models) {
+    // Check if models exist, else create fallbacks
     this.models.dark = models.dark || this.createFallback("dark");
     this.models.happy = models.happy || this.createFallback("happy");
 
+    // Auto-scale & Re-center BOTH loaded GLTF models perfectly
     this.normalizeModel(this.models.dark);
     this.normalizeModel(this.models.happy);
 
@@ -50,27 +52,34 @@ export class Character {
   }
 
   normalizeModel(model) {
-    if (!model) {
-      return;
-    }
+    if (!model) return;
 
+    // Reset transform matrix
     model.position.set(0, 0, 0);
+    model.rotation.set(0, 0, 0);
+    model.scale.set(1, 1, 1);
     model.updateMatrixWorld(true);
 
+    // Calculate original bounding box
     const box = new THREE.Box3().setFromObject(model);
     const size = box.getSize(new THREE.Vector3());
-    const scale = 1.2 / Math.max(size.y, 1);
+
+    // Scale to fixed height (1.4 units)
+    const targetHeight = 1.4;
+    const scale = targetHeight / (size.y || 1);
     model.scale.set(scale, scale, scale);
     model.updateMatrixWorld(true);
 
+    // Re-calculate box post scaling
     const scaledBox = new THREE.Box3().setFromObject(model);
     const center = scaledBox.getCenter(new THREE.Vector3());
-    const min = scaledBox.min.clone();
 
+    // Recenter X & Z, and rest feet on ground Y = 0
     model.position.x -= center.x;
-    model.position.y -= min.y;
     model.position.z -= center.z;
+    model.position.y -= scaledBox.min.y;
 
+    // Enable shadows & visibility across all mesh nodes
     model.traverse((child) => {
       if (child.isMesh) {
         child.visible = true;
@@ -86,25 +95,23 @@ export class Character {
   }
 
   updateModel() {
+    // Clear previous model from group
     while (this.group.children.length > 0) {
       this.group.remove(this.group.children[0]);
     }
 
     const nextModel = this.models[this.activeTheme];
     if (nextModel) {
+      nextModel.visible = true;
       nextModel.traverse((child) => {
-        if (child.isMesh) {
-          child.visible = true;
-        }
+        if (child.isMesh) child.visible = true;
       });
       this.group.add(nextModel);
     }
   }
 
   startJump(onReveal, onComplete) {
-    if (this.isJumping) {
-      return false;
-    }
+    if (this.isJumping) return false;
 
     this.isJumping = true;
     this.jumpProgress = 0;
@@ -115,11 +122,9 @@ export class Character {
   }
 
   update(delta) {
-    if (!this.isJumping) {
-      return;
-    }
+    if (!this.isJumping) return;
 
-    this.jumpProgress += delta * 1.7;
+    this.jumpProgress += delta * 1.8;
     const progress = Math.min(this.jumpProgress, 1);
     const jumpHeight = Math.sin(progress * Math.PI) * 2.2;
     this.group.position.y = jumpHeight;

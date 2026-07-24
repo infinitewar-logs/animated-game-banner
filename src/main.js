@@ -32,15 +32,22 @@ const assetManager = new AssetManager((progress) => {
   uiManager.setLoadingProgress(progress);
 });
 
+// Relative path pointing to /src/gmodels/
+const assetBaseUrl = new URL("./gmodels/", import.meta.url);
+const modelUrls = {
+  dark: new URL("mario.glb", assetBaseUrl).toString(),
+  happy: new URL("marioBobble.glb", assetBaseUrl).toString(),
+};
+
 uiManager.showLoadingOverlay();
 assetManager
-  .loadModels({
-    dark: "./src/gmodels/mario.glb",
-    happy: "./src/gmodels/marioBobble.glb",
-  })
+  .loadModels(modelUrls)
   .then((models) => {
     character.setModels(models);
     character.setTheme(themeManager.isDarkMode ? "dark" : "happy");
+  })
+  .catch((err) => {
+    console.error("Error loading 3D assets:", err);
   })
   .finally(() => {
     uiManager.hideLoadingOverlay();
@@ -58,13 +65,8 @@ function resetScene() {
 }
 
 function handleJumpRequest() {
-  if (stateMachine.isBusy()) {
-    return;
-  }
-
-  if (spacePresses < 2 || !shiftPressed) {
-    return;
-  }
+  if (stateMachine.isBusy()) return;
+  if (spacePresses < 2 || !shiftPressed) return;
 
   const jumpCompleted = stateMachine.transition(STATES.JUMPING, () => {
     return new Promise((resolve) => {
@@ -73,9 +75,7 @@ function handleJumpRequest() {
         secretBanner.reveal();
       }, resolve);
 
-      if (!started) {
-        resolve();
-      }
+      if (!started) resolve();
     });
   });
 
