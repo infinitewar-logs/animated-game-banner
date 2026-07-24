@@ -35,8 +35,8 @@ const assetManager = new AssetManager((progress) => {
 uiManager.showLoadingOverlay();
 assetManager
   .loadModels({
-    dark: "./mario.glb",
-    happy: "./marioBobble.glb",
+    dark: "./src/gmodels/mario.glb",
+    happy: "./src/gmodels/marioBobble.glb",
   })
   .then((models) => {
     character.setModels(models);

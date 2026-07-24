@@ -1,4 +1,4 @@
-import * as THREE from "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js";
+import * as THREE from "https://unpkg.com/three@0.128.0/build/three.module.js";
 
 export class SecretBanner {
   constructor(isDarkMode = true) {
@@ -20,8 +20,8 @@ export class SecretBanner {
 
   getBannerText() {
     return this.isDarkMode
-      ? "Good Night Sleep Well"
-      : "Good Morning , Stay Bright";
+      ? "Good Night Sleep Well Dream Big"
+      : "Good Morning , Stay Bright Age Less , Heal fast , Stay Blessed";
   }
 
   createTexture() {
@@ -51,8 +51,6 @@ export class SecretBanner {
     ctx.fillText(this.bannerText, canvas.width / 2, 260);
 
     ctx.fillStyle = this.isDarkMode ? "#ffaa00" : "#2980b9";
-    ctx.font = "32px Arial, sans-serif";
-    ctx.fillText("🤫 Only You & Me Know This!", canvas.width / 2, 370);
 
     return new THREE.CanvasTexture(canvas);
   }
