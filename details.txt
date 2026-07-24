@@ -5,3 +5,14 @@ Technical Highlights & Optimization
 •	Bounding Box Alignment: Uses THREE.Box3() bounding calculation to dynamically calculate model height, auto-scaling and centering both 3D models beneath the rotating Question Block cleanly.
 
 •	Structured Camera Frame: Precise perspective layout keeping the Grass/Cyber Floor, Middle Question Block, and High-Res Floating Banner perfectly balanced within view.
+
+
+Upon planning with Gemini and Code colloaboration with Copilot , I was able to refactor the code in the updated folder structure 
+
+There were some challanges and Loading issues 
+Failed to load resource 
+Failed to use import of Three.js via cloud flare , so , I was able to find a new url with help of Gemini 
+
+I wish to cuddle the libraries , and make them and prepare a list of trustworthy and secure and stable and long term availbility of the bits in the js libs 
+
+Currently I am solving the UI level bugs and issues
