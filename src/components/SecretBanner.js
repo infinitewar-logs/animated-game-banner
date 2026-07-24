@@ -21,7 +21,7 @@ export class SecretBanner {
   getBannerText() {
     return this.isDarkMode
       ? "Good Night Sleep Well Dream Big"
-      : "Good Morning , Stay Bright Age Less , Heal fast , Stay Blessed";
+      : "Good Morning Stay Bright Age Less , Heal fast , Stay Blessed";
   }
 
   createTexture() {

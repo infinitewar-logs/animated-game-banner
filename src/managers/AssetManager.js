@@ -38,6 +38,7 @@ export class AssetManager {
     const loaders = Object.entries(modelMap).map(async ([key, url]) => {
       try {
         const scene = await this.loadModel(url);
+        console.log(`Loaded GLTF model [${key}] from: ${url}`);
         return [key, scene];
       } catch (error) {
         console.warn(`Loading failed for ${url}:`, error);

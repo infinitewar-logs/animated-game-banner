@@ -54,16 +54,26 @@ export class Character {
       return;
     }
 
+    model.position.set(0, 0, 0);
+    model.updateMatrixWorld(true);
+
     const box = new THREE.Box3().setFromObject(model);
     const size = box.getSize(new THREE.Vector3());
     const scale = 1.2 / Math.max(size.y, 1);
-
     model.scale.set(scale, scale, scale);
-    const center = box.getCenter(new THREE.Vector3());
-    model.position.sub(center.multiplyScalar(scale));
+    model.updateMatrixWorld(true);
+
+    const scaledBox = new THREE.Box3().setFromObject(model);
+    const center = scaledBox.getCenter(new THREE.Vector3());
+    const min = scaledBox.min.clone();
+
+    model.position.x -= center.x;
+    model.position.y -= min.y;
+    model.position.z -= center.z;
 
     model.traverse((child) => {
       if (child.isMesh) {
+        child.visible = true;
         child.castShadow = true;
         child.receiveShadow = true;
       }
@@ -82,6 +92,11 @@ export class Character {
 
     const nextModel = this.models[this.activeTheme];
     if (nextModel) {
+      nextModel.traverse((child) => {
+        if (child.isMesh) {
+          child.visible = true;
+        }
+      });
       this.group.add(nextModel);
     }
   }
